@@ -13,6 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 网关请求上下文
+ * 这个类封装了 Netty 的 FullHttpRequest，并提供了便捷的方法来访问请求的各个部分。
+ * 设计时考虑了后续可能需要扩展的属性，比如客户端 IP、请求体等。
+ */
 @Getter
 public class GatewayRequest {
 
