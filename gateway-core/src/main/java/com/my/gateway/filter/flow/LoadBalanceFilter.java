@@ -5,6 +5,7 @@ import com.my.gateway.context.GatewayRoute;
 import com.my.gateway.context.UpstreamInstance;
 import com.my.gateway.filter.GatewayFilter;
 import com.my.gateway.filter.GatewayFilterChain;
+import com.my.gateway.health.PassiveHealthManager;
 import com.my.gateway.loadbalance.LoadBalancerFactory;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +38,23 @@ public class LoadBalanceFilter implements GatewayFilter {
             return;
         }
 
-        String chosen = LoadBalancerFactory.get(route.getLb()).choose(upstreams, ctx);
+        String routeId = route.getId() == null ? "default" : route.getId();
+        PassiveHealthManager hm = PassiveHealthManager.getInstance();
+
+        // 过滤掉 OPEN/被限流的 upstream（fail-fast）
+        List<UpstreamInstance> candidates = upstreams.stream()
+                .filter(u -> hm.tryAcquire(routeId, u.getUrl()))
+                .toList();
+
+        if (candidates.isEmpty()) {
+            ctx.getResponse().setStatus(HttpResponseStatus.SERVICE_UNAVAILABLE);
+            ctx.getResponse().setJsonContent("{\"error\":\"All upstreams are unhealthy (fail-fast)\"}");
+            ctx.writeResponse();
+            return;
+        }
+
+        String chosen = LoadBalancerFactory.get(route.getLb()).choose(candidates, ctx);
         ctx.setSelectedUpstream(chosen);
-        log.info("[LB] routeId={}, strategy={}, chosen={}", route.getId(), route.getLb(), chosen);
 
         chain.doFilter(ctx);
     }

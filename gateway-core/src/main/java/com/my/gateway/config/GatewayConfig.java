@@ -15,4 +15,7 @@ public class GatewayConfig {
 
     // 路由列表
     private List<GatewayRoute> routes;
+
+    // 健康检查配置
+    private HealthConfig health = new HealthConfig();
 }

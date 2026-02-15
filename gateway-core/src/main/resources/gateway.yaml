@@ -19,4 +19,9 @@ routes:
       - url: http://httpbingo.org
         weight: 1
 
+health:
+  failureThreshold: 3
+  openCooldownMs: 8000
+  halfOpenMaxCalls: 1
+  successThresholdToClose: 2
 

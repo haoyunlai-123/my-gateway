@@ -4,6 +4,7 @@ import com.my.gateway.context.GatewayContext;
 import com.my.gateway.context.GatewayRoute;
 import com.my.gateway.filter.GatewayFilter;
 import com.my.gateway.filter.GatewayFilterChain;
+import com.my.gateway.health.PassiveHealthManager;
 import com.my.gateway.netty.AsyncHttpHelper;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -44,20 +45,31 @@ public class RouteFilter implements GatewayFilter {
         // 关键修改：异步回调，非阻塞！
         // ==========================================
         future.whenComplete((response, throwable) -> {
-            if (throwable != null) {
-                log.error("Request failed", throwable);
-                ctx.getResponse().setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                ctx.getResponse().setJsonContent("{\"error\":\"" + throwable.getMessage() + "\"}");
-            } else {
-                // 正常响应
-                ctx.getResponse().setStatus(HttpResponseStatus.valueOf(response.getStatusCode()));
-                ctx.getResponse().getHeaders().add(HttpHeaderNames.CONTENT_TYPE, response.getContentType());
-                ctx.getResponse().setContent(response.getResponseBody());
-            }
+            String routeId = (ctx.getRoute() != null && ctx.getRoute().getId() != null) ? ctx.getRoute().getId() : "default";
+            String upstream = ctx.getSelectedUpstream() != null ? ctx.getSelectedUpstream() : (ctx.getRoute() != null ? ctx.getRoute().getBackendUrl() : null);
 
-            // 【重要】回调执行完毕后，手动触发写回客户端
-            // 这一步会在 AsyncHttpClient 的线程或 Netty 线程中执行
-            ctx.writeResponse();
+            try {
+                if (throwable != null) {
+                    PassiveHealthManager.getInstance().onFailure(routeId, upstream);
+
+                    ctx.getResponse().setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    ctx.getResponse().setJsonContent("{\"error\":\"" + throwable.getMessage() + "\"}");
+                } else {
+                    int code = response.getStatusCode();
+                    if (code >= 500) {
+                        PassiveHealthManager.getInstance().onFailure(routeId, upstream);
+                    } else {
+                        PassiveHealthManager.getInstance().onSuccess(routeId, upstream);
+                    }
+
+                    ctx.getResponse().setStatus(HttpResponseStatus.valueOf(code));
+                    ctx.getResponse().getHeaders().add(HttpHeaderNames.CONTENT_TYPE, response.getContentType());
+                    ctx.getResponse().getHeaders().add("X-Gateway-Upstream", upstream); // 调试很好用
+                    ctx.getResponse().setContent(response.getResponseBody());
+                }
+            } finally {
+                ctx.writeResponse();
+            }
         });
 
         // 方法直接返回，Netty 线程释放去处理其他请求了，不在这里等待
