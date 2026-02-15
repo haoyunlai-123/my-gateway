@@ -17,9 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 路由过滤器：负责将请求转发到后端服务
- * 重要说明：为了保持 Netty 架构的简单性，演示阶段使用了 get() 阻塞
- * 在生产级高性能网关中，这里应该配合 Netty 的异步回调机制，不应该阻塞 Worker 线程。
- * 但为了不大幅改动当前的 Chain 结构，我们先用 get() 跑通流程)
+ *
  */
 @Slf4j
 public class RouteFilter implements GatewayFilter {
@@ -102,20 +100,27 @@ public class RouteFilter implements GatewayFilter {
         return builder.build();
     }
 
+    private void recordMetrics(GatewayContext ctx, String routeId, String upstream, int statusCode) {
+        long rtMs = (System.nanoTime() - ctx.getStartNano()) / 1_000_000L;
+
+        // 可选：写回到 ctx，方便后续扩展
+        ctx.setFinalStatusCode(statusCode);
+        ctx.setFinalUpstream(upstream);
+
+        com.my.gateway.metrics.MetricsRegistry.getInstance()
+                .record(routeId, upstream, statusCode, rtMs);
+    }
 
 
     private void attempt(GatewayContext ctx, int remainingRetries) {
         String routeId = (ctx.getRoute() != null && ctx.getRoute().getId() != null) ? ctx.getRoute().getId() : "default";
         String upstream = ctx.getSelectedUpstream();
 
-        // 构建请求
         org.asynchttpclient.Request downstreamRequest = buildRequest(ctx, upstream);
-
         var future = com.my.gateway.netty.AsyncHttpHelper.getInstance().executeRequest(downstreamRequest);
 
         future.whenComplete((resp, ex) -> {
             if (ex != null) {
-                // 网络异常 / 连接异常：认为可重试
                 com.my.gateway.health.PassiveHealthManager.getInstance().onFailure(routeId, upstream);
 
                 if (remainingRetries > 0) {
@@ -123,13 +128,15 @@ public class RouteFilter implements GatewayFilter {
                     if (next != null) {
                         ctx.setSelectedUpstream(next);
                         ctx.getTriedUpstreams().add(next);
-
                         scheduleRetry(ctx, remainingRetries - 1);
-                        return;
+                        return; // 继续重试，不打点
                     }
                 }
 
-                // 无法重试：返回错误
+                // 最终失败出口：502
+                int finalCode = HttpResponseStatus.BAD_GATEWAY.code();
+                recordMetrics(ctx, routeId, upstream, finalCode);
+
                 ctx.getResponse().setStatus(HttpResponseStatus.BAD_GATEWAY);
                 ctx.getResponse().setJsonContent("{\"error\":\"upstream error: " + safeMsg(ex.getMessage()) + "\"}");
                 ctx.writeResponse();
@@ -138,26 +145,26 @@ public class RouteFilter implements GatewayFilter {
 
             int code = resp.getStatusCode();
 
-            // 5xx 认为失败，4xx 不算上游不健康（服务是活的）
             if (code >= 500) {
                 com.my.gateway.health.PassiveHealthManager.getInstance().onFailure(routeId, upstream);
             } else {
                 com.my.gateway.health.PassiveHealthManager.getInstance().onSuccess(routeId, upstream);
             }
 
-            // 是否触发重试：仅对配置的 502/503/504 等
+            // 触发重试：仅对配置的 502/503/504 等
             if (code >= 500 && remainingRetries > 0 && shouldRetryByStatus(code)) {
                 String next = com.my.gateway.filter.flow.LoadBalanceFilter.chooseUpstream(ctx);
                 if (next != null) {
                     ctx.setSelectedUpstream(next);
                     ctx.getTriedUpstreams().add(next);
-
                     scheduleRetry(ctx, remainingRetries - 1);
-                    return;
+                    return; // 继续重试，不打点
                 }
             }
 
-            // 成功/不重试：正常写回
+            // 最终成功/最终不重试出口：记录指标
+            recordMetrics(ctx, routeId, upstream, code);
+
             ctx.getResponse().setStatus(HttpResponseStatus.valueOf(code));
             ctx.getResponse().getHeaders().add(io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE, resp.getContentType());
             ctx.getResponse().getHeaders().add("X-Gateway-Upstream", upstream);
@@ -165,6 +172,7 @@ public class RouteFilter implements GatewayFilter {
             ctx.writeResponse();
         });
     }
+
 
     private void scheduleRetry(GatewayContext ctx, int remaining) {
         long delay = backoffMs();

@@ -34,6 +34,9 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
         GatewayRequest request = new GatewayRequest(clientIp, msg);
         GatewayContext gatewayContext = new GatewayContext(ctx, request);
 
+        // 3. 记录请求开始时间（用于后续日志和监控）
+        gatewayContext.setStartNano(System.nanoTime());
+
         try {
             // ============================================
             // 核心：获取并执行过滤器链

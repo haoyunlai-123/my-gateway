@@ -34,6 +34,16 @@ public class GatewayContext {
     // 记录已经尝试过的上游服务地址，避免重试同一个地址
     private final Set<String> triedUpstreams = new java.util.HashSet<>();
 
+    // 请求开始时间
+    private long startNano;
+
+    // 最终响应码（重试后最终结果）
+    private int finalStatusCode;
+
+    // 最终命中的 upstream（重试后最终）
+    private String finalUpstream;
+
+
     // 可以在这里加一个 generic 容器用来在 Filter 间传递参数
     // private Map<String, Object> attributes = new ConcurrentHashMap<>();
 
