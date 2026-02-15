@@ -18,4 +18,7 @@ public class GatewayConfig {
 
     // 健康检查配置
     private HealthConfig health = new HealthConfig();
+
+    // 重试配置
+    private RetryConfig retry = new RetryConfig();
 }

@@ -9,6 +9,8 @@ import io.netty.util.ReferenceCountUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 public class GatewayContext {
@@ -29,6 +31,8 @@ public class GatewayContext {
     // 选中的上游服务地址（可以在路由匹配阶段设置）
     private String selectedUpstream;
 
+    // 记录已经尝试过的上游服务地址，避免重试同一个地址
+    private final Set<String> triedUpstreams = new java.util.HashSet<>();
 
     // 可以在这里加一个 generic 容器用来在 Filter 间传递参数
     // private Map<String, Object> attributes = new ConcurrentHashMap<>();
