@@ -16,6 +16,8 @@ public class GatewayContext {
 
     private GatewayResponse response;
 
+    private GatewayRoute route; // 当前请求匹配到的路由信息
+
     // 可以在这里加一个 generic 容器用来在 Filter 间传递参数
     // private Map<String, Object> attributes = new ConcurrentHashMap<>();
 

@@ -23,6 +23,7 @@
     <netty.version>4.1.101.Final</netty.version>
     <lomok.version>1.18.30</lomok.version>
     <logback.version>1.4.14</logback.version>
+    <asyn-http.version>2.12.3</asyn-http.version>
   </properties>
 
   <dependencies>
@@ -38,7 +39,10 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.asynchttpclient</groupId>
+      <artifactId>async-http-client</artifactId>
+    </dependency>
   </dependencies>
 
   <dependencyManagement>
@@ -60,6 +64,11 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.asynchttpclient</groupId>
+        <artifactId>async-http-client</artifactId>
+        <version>${asyn-http.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
