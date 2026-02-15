@@ -1,0 +1,12 @@
+port: 9000
+appName: advanced-gateway
+routes:
+  - id: baidu-route
+    path: /baidu
+    backendUrl: http://www.baidu.com
+  - id: httpbin-route
+    path: /json
+    backendUrl: http://httpbin.org
+  - id: local-test
+    path: /local
+    backendUrl: http://localhost:8081

@@ -24,6 +24,7 @@
     <lomok.version>1.18.30</lomok.version>
     <logback.version>1.4.14</logback.version>
     <asyn-http.version>2.12.3</asyn-http.version>
+    <jackson.version>2.15.2</jackson.version>
   </properties>
 
   <dependencies>
@@ -42,6 +43,16 @@
     <dependency>
       <groupId>org.asynchttpclient</groupId>
       <artifactId>async-http-client</artifactId>
+    </dependency>
+    <!-- Jackson YAML 解析 -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
+    <!-- Jackson 核心绑定 -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
     </dependency>
   </dependencies>
 
@@ -69,6 +80,18 @@
         <groupId>org.asynchttpclient</groupId>
         <artifactId>async-http-client</artifactId>
         <version>${asyn-http.version}</version>
+      </dependency>
+      <!-- Jackson YAML 解析 -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <!-- Jackson 核心绑定 -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
