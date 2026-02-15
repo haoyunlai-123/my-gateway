@@ -26,32 +26,41 @@ public class RouteFilter implements GatewayFilter {
     @Override
     public void doFilter(GatewayContext ctx, GatewayFilterChain chain) throws Exception {
         GatewayRoute route = ctx.getRoute();
-
-        // 1. 如果没有配置路由，直接放行或报错（这里简单处理为打印日志）
         if (route == null) {
-            log.warn("No route found for path: {}", ctx.getRequest().getPath());
+            // 如果没有路由，直接返回，或者写入 404
+            log.warn("No route found");
+            ctx.getResponse().setStatus(HttpResponseStatus.NOT_FOUND);
+            ctx.getResponse().setJsonContent("{\"error\":\"Route Not Found\"}");
+            ctx.writeResponse(); // 必须手动触发写回
             return;
         }
 
-        log.info("Forwarding to: {}", route.getBackendUrl());
-
-        // 2. 构建转发请求 (将 GatewayRequest 转为 AsyncHttpClient Request)
         Request downstreamRequest = buildRequest(ctx, route);
 
-        // 3. 执行异步调用
+        // 获取 Future
         CompletableFuture<Response> future = AsyncHttpHelper.getInstance().executeRequest(downstreamRequest);
 
-        // 4. 等待结果 (重要说明：为了保持 Netty 架构的简单性，演示阶段在这里使用了 get() 阻塞
-        // 在生产级高性能网关中，这里应该配合 Netty 的异步回调机制，不应该阻塞 Worker 线程。
-        // 但为了不大幅改动当前的 Chain 结构，我们先用 get() 跑通流程)
-        Response response = future.get(); // 阻塞等待后端响应
+        // ==========================================
+        // 关键修改：异步回调，非阻塞！
+        // ==========================================
+        future.whenComplete((response, throwable) -> {
+            if (throwable != null) {
+                log.error("Request failed", throwable);
+                ctx.getResponse().setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                ctx.getResponse().setJsonContent("{\"error\":\"" + throwable.getMessage() + "\"}");
+            } else {
+                // 正常响应
+                ctx.getResponse().setStatus(HttpResponseStatus.valueOf(response.getStatusCode()));
+                ctx.getResponse().getHeaders().add(HttpHeaderNames.CONTENT_TYPE, response.getContentType());
+                ctx.getResponse().setContent(response.getResponseBody());
+            }
 
-        // 5. 将后端响应写回 GatewayContext
-        ctx.getResponse().setStatus(HttpResponseStatus.valueOf(response.getStatusCode()));
-        ctx.getResponse().getHeaders().add(HttpHeaderNames.CONTENT_TYPE, response.getContentType());
-        ctx.getResponse().setContent(response.getResponseBody());
+            // 【重要】回调执行完毕后，手动触发写回客户端
+            // 这一步会在 AsyncHttpClient 的线程或 Netty 线程中执行
+            ctx.writeResponse();
+        });
 
-        // 6. 链条结束，不需要再调用 chain.doFilter(ctx) 因为这是最后一环
+        // 方法直接返回，Netty 线程释放去处理其他请求了，不在这里等待
     }
 
     private Request buildRequest(GatewayContext ctx, GatewayRoute route) {

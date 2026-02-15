@@ -24,7 +24,7 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
 
         // 2. 构建核心上下文 GatewayContext
         // 注意：这里必须 retain 一下 msg，因为 SimpleChannelInboundHandler 会自动 release，
-        // 而我们的 GatewayContext 需要持有它直到处理结束。
+        // 而 GatewayContext 需要持有它直到处理结束。
         // 但为了简单演示，暂且认为 Context 生命周期就在这个方法内结束，先不 retain，
         // 后面引入异步 Filter 时需要特别注意引用计数问题。
         GatewayRequest request = new GatewayRequest(clientIp, msg);
@@ -38,10 +38,13 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
                     .buildFilterChain()
                     .doFilter(gatewayContext);
 
-            // 注意：因为 Filter 是递归调用的，doFilter 返回意味着所有逻辑执行完毕
+            // ========================================================
+            // 核心修改：删除了 writeResponse(gatewayContext)
+            // ========================================================
+            // 因为现在的逻辑是：
+            // 1. 如果走到 RouteFilter，由 RouteFilter 的 callback 异步触发 writeResponse
+            // 2. 如果中间某个 Filter 拦截了（比如鉴权失败），那个 Filter 必须自己调用 ctx.writeResponse()
 
-            // 写入响应 (如果某个 Filter 已经写回了响应，这里需要判断一下，目前简单处理再次 write)
-            writeResponse(gatewayContext);
 
         } catch (Exception e) {
 
@@ -50,7 +53,7 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
             GatewayResponse errResponse = gatewayContext.getResponse();
             errResponse.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
             errResponse.setJsonContent("{\"error\": \"" + e.getMessage() + "\"}");
-            writeResponse(gatewayContext);
+            gatewayContext.writeResponse();
 
         } finally {
             // 4. 确保资源释放 (虽然后面 writeResponse 会消耗掉，但加个保险是个好习惯)
@@ -69,7 +72,7 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
         response.setJsonContent("{\"message\": \"Context Refactor Success\", \"path\": \"" + context.getRequest().getPath() + "\"}");
     }
 
-    // 模拟 Response 写回逻辑
+    /*// 模拟 Response 写回逻辑
     private void writeResponse(GatewayContext context) {
         GatewayResponse gatewayResponse = context.getResponse();
         FullHttpRequest nettyRequest = context.getRequest().getFullHttpRequest();
@@ -92,5 +95,5 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
         } else {
             context.getNettyCtx().writeAndFlush(httpResponse).addListener(ChannelFutureListener.CLOSE);
         }
-    }
+    }*/
 }
