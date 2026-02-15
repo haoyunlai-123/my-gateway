@@ -1,6 +1,7 @@
 package com.my.gateway.loadbalance;
 
 import com.my.gateway.context.GatewayContext;
+import com.my.gateway.context.UpstreamInstance;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,13 +13,13 @@ public class RoundRobinLoadBalancer implements LoadBalancer {
     private final ConcurrentHashMap<String, AtomicInteger> seqMap = new ConcurrentHashMap<>();
 
     @Override
-    public String choose(List<String> upstreams, GatewayContext ctx) {
+    public String choose(List<UpstreamInstance> upstreams, GatewayContext ctx) {
         String routeId = (ctx.getRoute() != null && ctx.getRoute().getId() != null)
                 ? ctx.getRoute().getId()
                 : "default";
 
         AtomicInteger seq = seqMap.computeIfAbsent(routeId, k -> new AtomicInteger(0));
         int idx = Math.floorMod(seq.getAndIncrement(), upstreams.size());
-        return upstreams.get(idx);
+        return upstreams.get(idx).getUrl();
     }
 }

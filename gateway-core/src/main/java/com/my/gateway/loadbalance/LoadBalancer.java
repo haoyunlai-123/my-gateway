@@ -1,6 +1,7 @@
 package com.my.gateway.loadbalance;
 
 import com.my.gateway.context.GatewayContext;
+import com.my.gateway.context.UpstreamInstance;
 
 import java.util.List;
 
@@ -9,7 +10,7 @@ import java.util.List;
  */
 public interface LoadBalancer {
 
-    String choose(List<String> upstreams, GatewayContext ctx);
+    String choose(List<UpstreamInstance> upstreams, GatewayContext ctx);
 
     default String name() {
         return this.getClass().getSimpleName();

@@ -2,6 +2,7 @@ package com.my.gateway.filter.flow;
 
 import com.my.gateway.context.GatewayContext;
 import com.my.gateway.context.GatewayRoute;
+import com.my.gateway.context.UpstreamInstance;
 import com.my.gateway.filter.GatewayFilter;
 import com.my.gateway.filter.GatewayFilterChain;
 import com.my.gateway.loadbalance.LoadBalancerFactory;
@@ -21,7 +22,7 @@ public class LoadBalanceFilter implements GatewayFilter {
             return;
         }
 
-        List<String> upstreams = route.getUpstreams();
+        List<UpstreamInstance> upstreams = route.getUpstreams();
         // 兼容老配置：只有 backendUrl
         if ((upstreams == null || upstreams.isEmpty()) && route.getBackendUrl() != null) {
             ctx.setSelectedUpstream(route.getBackendUrl());

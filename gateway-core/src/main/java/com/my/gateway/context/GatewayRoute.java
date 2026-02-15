@@ -22,7 +22,8 @@ public class GatewayRoute {
     private String backendUrl;
 
     //  新增：多实例 upstream 列表（本地配置负载均衡）
-    private List<String> upstreams;
+//    private List<String> upstreams;
+    private List<UpstreamInstance> upstreams;
 
     //  新增：负载均衡策略：random / round_robin / consistent_hash
     private String lb;
