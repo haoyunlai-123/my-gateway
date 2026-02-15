@@ -25,25 +25,37 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttp
         // 2. 构建核心上下文 GatewayContext
         // 注意：这里必须 retain 一下 msg，因为 SimpleChannelInboundHandler 会自动 release，
         // 而我们的 GatewayContext 需要持有它直到处理结束。
-        // 但为了简单演示，我们暂且认为 Context 生命周期就在这个方法内结束，先不 retain，
+        // 但为了简单演示，暂且认为 Context 生命周期就在这个方法内结束，先不 retain，
         // 后面引入异步 Filter 时需要特别注意引用计数问题。
         GatewayRequest request = new GatewayRequest(clientIp, msg);
         GatewayContext gatewayContext = new GatewayContext(ctx, request);
 
         try {
             // ============================================
-            // 阶段三预留：这里将调用过滤器链 filterChain.doFilter(gatewayContext);
-            // 现在我们暂时手动模拟业务处理
-            handleBiz(gatewayContext);
+            // 核心：获取并执行过滤器链
             // ============================================
+            com.my.gateway.filter.FilterFactory.getInstance()
+                    .buildFilterChain()
+                    .doFilter(gatewayContext);
 
-            // 3. 写回响应
+            // 注意：因为 Filter 是递归调用的，doFilter 返回意味着所有逻辑执行完毕
+
+            // 写入响应 (如果某个 Filter 已经写回了响应，这里需要判断一下，目前简单处理再次 write)
+            writeResponse(gatewayContext);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            // 发生异常，返回 500
+            GatewayResponse errResponse = gatewayContext.getResponse();
+            errResponse.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            errResponse.setJsonContent("{\"error\": \"" + e.getMessage() + "\"}");
             writeResponse(gatewayContext);
 
         } finally {
             // 4. 确保资源释放 (虽然后面 writeResponse 会消耗掉，但加个保险是个好习惯)
             // 在这里如果是 SimpleChannelInboundHandler，它会在方法返回后自动 release msg。
-            // 如果我们把 msg 传给了异步线程，这里就不能用 SimpleChannelInboundHandler 了。
+            // 如果把 msg 传给了异步线程，这里就不能用 SimpleChannelInboundHandler 了。
         }
     }
 
