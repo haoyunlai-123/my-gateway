@@ -5,7 +5,7 @@ routes:
     path: /local
     lb: smooth_wrr
     upstreams:
-      - url: http://localhost:18081
+      - url: http://localhost:8081
         weight: 5
       - url: http://localhost:8082
         weight: 1

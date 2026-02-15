@@ -19,6 +19,8 @@ public class FilterFactory {
         filters.add(new com.my.gateway.filter.route.RouteFilter());
         filters.add(new com.my.gateway.filter.flow.LoadBalanceFilter());
         filters.add(new com.my.gateway.filter.demo.MetricsEndpointFilter());
+        filters.add(new com.my.gateway.filter.demo.RoutesEndpointFilter());
+
 
         // 2. 可以在这里加更多的过滤器...
 

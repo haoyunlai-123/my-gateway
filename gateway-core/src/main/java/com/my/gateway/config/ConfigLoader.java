@@ -12,11 +12,23 @@ public class ConfigLoader {
     private static final ConfigLoader INSTANCE = new ConfigLoader();
     private GatewayConfig config;
 
+    private String configFilePath;
+
+    public void setConfigFilePath(String configFilePath) {
+        this.configFilePath = configFilePath;
+    }
+
     private ConfigLoader() {
     }
 
     public static ConfigLoader getInstance() {
         return INSTANCE;
+    }
+
+    public synchronized GatewayConfig reload() {
+        GatewayConfig cfg = loadConfig();
+        this.config = cfg;
+        return cfg;
     }
 
     /**
