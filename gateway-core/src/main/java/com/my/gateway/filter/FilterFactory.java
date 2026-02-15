@@ -17,6 +17,7 @@ public class FilterFactory {
         filters.add(new com.my.gateway.filter.demo.MonitorFilter());
         filters.add(new com.my.gateway.filter.flow.RouteSetupFilter());
         filters.add(new com.my.gateway.filter.route.RouteFilter());
+        filters.add(new com.my.gateway.filter.flow.LoadBalanceFilter());
         // 2. 可以在这里加更多的过滤器...
 
         // 按照 Order 排序

@@ -16,6 +16,10 @@ import java.net.InetSocketAddress;
 @Slf4j
 public class NettyHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
+    public NettyHttpServerHandler() {
+        super(false); // 关闭自动释放，交给 GatewayContext 管理
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
         // 1. 获取客户端 IP (简单的获取方式)

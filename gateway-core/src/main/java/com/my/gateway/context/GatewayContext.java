@@ -26,6 +26,10 @@ public class GatewayContext {
     //标识位，标识是否已经写回响应，防止重复写入
     private boolean written = false;
 
+    // 选中的上游服务地址（可以在路由匹配阶段设置）
+    private String selectedUpstream;
+
+
     // 可以在这里加一个 generic 容器用来在 Filter 间传递参数
     // private Map<String, Object> attributes = new ConcurrentHashMap<>();
 

@@ -64,7 +64,12 @@ public class RouteFilter implements GatewayFilter {
     }
 
     private Request buildRequest(GatewayContext ctx, GatewayRoute route) {
-        String backendUrl = route.getBackendUrl() + ctx.getRequest().getPath(); // 简单拼接: backend + path
+        // 构建后端请求 URL
+        String base = ctx.getSelectedUpstream();
+        if (base == null) {
+            base = route.getBackendUrl(); // 兜底兼容
+        }
+        String backendUrl = base + ctx.getRequest().getPath();
 
         RequestBuilder builder = new RequestBuilder(ctx.getRequest().getMethod().name());
         builder.setUrl(backendUrl);

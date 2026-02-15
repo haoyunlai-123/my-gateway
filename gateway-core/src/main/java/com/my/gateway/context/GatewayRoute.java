@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor // 新增：Jackson反序列化需要
@@ -18,4 +20,10 @@ public class GatewayRoute {
     private String serviceId;
     // 后端具体的 URL，例如 http://localhost:8081
     private String backendUrl;
+
+    //  新增：多实例 upstream 列表（本地配置负载均衡）
+    private List<String> upstreams;
+
+    //  新增：负载均衡策略：random / round_robin / consistent_hash
+    private String lb;
 }

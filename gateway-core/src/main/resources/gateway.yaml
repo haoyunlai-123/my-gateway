@@ -1,12 +1,16 @@
 port: 9000
 appName: advanced-gateway
 routes:
-  - id: baidu-route
-    path: /baidu
-    backendUrl: http://www.baidu.com
-  - id: httpbin-route
-    path: /json
-    backendUrl: http://httpbin.org
-  - id: local-test
+  - id: local-api
     path: /local
-    backendUrl: http://localhost:8081
+    lb: round_robin
+    upstreams:
+      - http://127.0.0.1:8081
+      - http://127.0.0.1:8082
+
+  - id: httpbin
+    path: /json
+    lb: random
+    upstreams:
+      - http://httpbin.org
+      - http://httpbingo.org   # 仅示例，建议换成你本地两个服务更好测
