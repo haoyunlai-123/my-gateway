@@ -1,10 +1,10 @@
 package com.my.gateway.filter.demo;
 
-import com.my.gateway.container.RouteManager;
+import com.my.gateway.config.RouteRegistry;
+import com.my.gateway.context.GatewayContext;
 import com.my.gateway.context.GatewayRoute;
 import com.my.gateway.filter.GatewayFilter;
 import com.my.gateway.filter.GatewayFilterChain;
-import com.my.gateway.context.GatewayContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class RoutesEndpointFilter implements GatewayFilter {
             return;
         }
 
-        List<GatewayRoute> routes = RouteManager.getInstance().current().getRoutes();
+        List<GatewayRoute> routes = RouteRegistry.getInstance().getRoutes();
 
         StringBuilder sb = new StringBuilder();
         sb.append("{\"size\":").append(routes.size()).append(",\"routes\":[");
@@ -38,6 +38,6 @@ public class RoutesEndpointFilter implements GatewayFilter {
 
     @Override
     public int getOrder() {
-        return -190; // 跟 metrics 差不多前
+        return -190;
     }
 }

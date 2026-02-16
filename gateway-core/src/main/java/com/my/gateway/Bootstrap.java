@@ -3,6 +3,7 @@ package com.my.gateway;
 import com.my.gateway.bootstrap.RouteHotReloaderPoller;
 import com.my.gateway.config.ConfigLoader;
 import com.my.gateway.config.GatewayConfig;
+import com.my.gateway.config.RouteRegistry;
 import com.my.gateway.container.RouteManager;
 import com.my.gateway.netty.NettyHttpServer;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,7 @@ public class Bootstrap {
      * 热更新轮询版
      * @param args
      */
-    public static void main(String[] args) {
+    /*public static void main1(String[] args) {
         String configPath = System.getProperty("gateway.config");
 
         // 1) 设置外部配置路径
@@ -42,23 +43,24 @@ public class Bootstrap {
 
         NettyHttpServer server = new NettyHttpServer(port);
         server.start();
-    }
+    }*/
 
     /**
      * 热更新监控版
      * @param args
      */
-    public static void main1(String[] args) {
+    public static void main(String[] args) {
         String configPath = System.getProperty("gateway.config");
 
         // 1) 先加载一次配置
         if (configPath != null && !configPath.isBlank()) {
-            com.my.gateway.config.ConfigLoader.getInstance().setConfigFilePath(configPath);
+            ConfigLoader.getInstance().loadConfig();
         }
-        var cfg = com.my.gateway.config.ConfigLoader.getInstance().reload();
+        var cfg = ConfigLoader.getInstance().reload();
 
         // 2) 初始化路由表快照
-        com.my.gateway.container.RouteManager.getInstance().refresh(cfg.getRoutes());
+        RouteManager.getInstance().refresh(cfg.getRoutes());
+        RouteRegistry.getInstance().setRoutes(cfg.getRoutes());
 
         // 3) 启动监听（只有外部路径才监听，classpath 文件不好监听）
         if (configPath != null && !configPath.isBlank()) {

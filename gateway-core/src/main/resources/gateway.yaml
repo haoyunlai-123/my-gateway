@@ -19,6 +19,7 @@ routes:
       - url: http://httpbingo.org
         weight: 1
 
+
 health:
   failureThreshold: 3
   openCooldownMs: 8000

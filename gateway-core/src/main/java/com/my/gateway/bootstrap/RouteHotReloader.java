@@ -2,6 +2,7 @@ package com.my.gateway.bootstrap;
 
 import com.my.gateway.config.ConfigLoader;
 import com.my.gateway.config.GatewayConfig;
+import com.my.gateway.config.RouteRegistry;
 import com.my.gateway.container.RouteManager;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,9 +45,13 @@ public class RouteHotReloader implements Runnable {
                     try { Thread.sleep(80); } catch (InterruptedException ignored) {}
 
                     try {
-                        GatewayConfig cfg = ConfigLoader.getInstance().reload();
-                        RouteManager.getInstance().refresh(cfg.getRoutes());
-                        log.info("[RouteHotReload] reloaded routes, size={}", cfg.getRoutes() == null ? 0 : cfg.getRoutes().size());
+                        // 文件变化后：
+                        GatewayConfig newCfg = ConfigLoader.getInstance().reload();
+                        RouteRegistry.getInstance().setRoutes(newCfg.getRoutes());
+                        RouteManager.getInstance().refresh(newCfg.getRoutes());
+                        log.info("[RouteHotReload] reloaded routes, size={}, ids={}",
+                                RouteRegistry.getInstance().getRoutes().size(),
+                                RouteRegistry.getInstance().getRoutes().stream().map(r -> r.getId()).toList());
                     } catch (Exception e) {
                         log.error("[RouteHotReload] reload failed, keep old routes. err={}", e.toString());
                     }

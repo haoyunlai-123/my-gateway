@@ -2,6 +2,7 @@ package com.my.gateway.filter.flow;
 
 import com.my.gateway.config.ConfigLoader;
 import com.my.gateway.config.GatewayConfig;
+import com.my.gateway.config.RouteRegistry;
 import com.my.gateway.container.RouteManager;
 import com.my.gateway.context.GatewayContext;
 import com.my.gateway.context.GatewayRoute;
@@ -28,7 +29,7 @@ public class RouteSetupFilter implements GatewayFilter {
                 }
             }*/
 
-            List<GatewayRoute> routes = RouteManager.getInstance().current().getRoutes();
+            List<GatewayRoute> routes = RouteRegistry.getInstance().getRoutes();
             for (GatewayRoute route : routes) {
                 if (reqPath.startsWith(route.getPath())) {
                     ctx.setRoute(route);
